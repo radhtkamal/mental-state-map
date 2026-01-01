@@ -4,13 +4,15 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import DatePicker from "../components/DatePicker";
 import StateTaskSection from "../components/StateTaskSection";
 import TaskSummary from "../components/TaskSummary";
+import DataBackup from "../components/DataBackup";
+import { useTaskData } from "../hooks/useIndexedDB";
 
 const TaskLogger = () => {
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
   );
-  const [tasks, setTasks] = useState({});
   const [taskInput, setTaskInput] = useState({});
+  const { tasks, loading, error, saveTasksForDate } = useTaskData();
 
   const states = [
     {
@@ -47,18 +49,6 @@ const TaskLogger = () => {
     },
   ];
 
-  // Load tasks from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem("mentalStateTasks");
-    if (stored) {
-      setTasks(JSON.parse(stored));
-    }
-  }, []);
-
-  // Save tasks to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("mentalStateTasks", JSON.stringify(tasks));
-  }, [tasks]);
 
   // Initialize input state for current date
   useEffect(() => {
@@ -70,7 +60,7 @@ const TaskLogger = () => {
     setTaskInput(inputData);
   }, [selectedDate, tasks]);
 
-  const addTask = (stateId) => {
+  const addTask = async (stateId) => {
     const taskText = taskInput[stateId]?.trim();
     if (!taskText) return;
 
@@ -81,16 +71,13 @@ const TaskLogger = () => {
       timestamp: now,
     };
 
-    setTasks((prev) => {
-      const dateData = prev[selectedDate] || {};
-      return {
-        ...prev,
-        [selectedDate]: {
-          ...dateData,
-          [stateId]: [...(dateData[stateId] || []), newTask],
-        },
-      };
-    });
+    const dateData = tasks[selectedDate] || {};
+    const updatedDateData = {
+      ...dateData,
+      [stateId]: [...(dateData[stateId] || []), newTask],
+    };
+
+    await saveTasksForDate(selectedDate, updatedDateData);
 
     // Clear input
     setTaskInput((prev) => ({
@@ -99,19 +86,14 @@ const TaskLogger = () => {
     }));
   };
 
-  const deleteTask = (stateId, taskId) => {
-    setTasks((prev) => {
-      const dateData = prev[selectedDate] || {};
-      return {
-        ...prev,
-        [selectedDate]: {
-          ...dateData,
-          [stateId]: (dateData[stateId] || []).filter(
-            (task) => task.id !== taskId
-          ),
-        },
-      };
-    });
+  const deleteTask = async (stateId, taskId) => {
+    const dateData = tasks[selectedDate] || {};
+    const updatedDateData = {
+      ...dateData,
+      [stateId]: (dateData[stateId] || []).filter((task) => task.id !== taskId),
+    };
+
+    await saveTasksForDate(selectedDate, updatedDateData);
   };
 
   const getDateData = () => tasks[selectedDate] || {};
@@ -124,6 +106,28 @@ const TaskLogger = () => {
       day: "numeric",
     });
   };
+
+  if (loading) {
+    return (
+      <div className="p-4 md:p-6">
+        <div className="max-w-6xl mx-auto text-center">
+          <p className="text-slate-600">Loading your task data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 md:p-6">
+        <div className="max-w-6xl mx-auto bg-red-50 border border-red-200 rounded-lg p-6">
+          <p className="text-red-900">
+            Error loading data: {error.message}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6">
@@ -179,6 +183,21 @@ const TaskLogger = () => {
 
         {/* Summary */}
         <TaskSummary tasks={getDateData()} states={states} />
+
+        {/* Data Backup */}
+        <div className="mt-8">
+          <DataBackup
+            mentalStateData={{}}
+            tasksData={tasks}
+            onImportComplete={(data) => {
+              if (data.tasks) {
+                Object.entries(data.tasks).forEach(([date, dateData]) => {
+                  saveTasksForDate(date, dateData);
+                });
+              }
+            }}
+          />
+        </div>
       </div>
     </div>
   );

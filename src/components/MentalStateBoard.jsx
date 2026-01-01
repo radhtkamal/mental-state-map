@@ -1,108 +1,109 @@
-import React, { useState, useEffect } from 'react';
-import { Cloud, CloudRain, Moon, Sun } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import StateCard from './StateCard';
-import CheckInHistory from './CheckInHistory';
-import GuidanceBox from './GuidanceBox';
-import UpdateWarning from './UpdateWarning';
+import React, { useState, useEffect } from "react";
+import { Cloud, CloudRain, Moon, Sun } from "lucide-react";
+import { Link } from "react-router-dom";
+import StateCard from "./StateCard";
+import CheckInHistory from "./CheckInHistory";
+import GuidanceBox from "./GuidanceBox";
+import UpdateWarning from "./UpdateWarning";
+import DataBackup from "./DataBackup";
+import { useMentalStateData } from "../hooks/useIndexedDB";
 
 const MentalStateBoard = () => {
+  const [showWarning, setShowWarning] = useState(false);
+  const { state: dbState, saveState, loading, error } = useMentalStateData();
   const [currentState, setCurrentState] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [updateCount, setUpdateCount] = useState(0);
-  const [showWarning, setShowWarning] = useState(false);
   const [history, setHistory] = useState([]);
+
+  // Load data from IndexedDB on mount
+  useEffect(() => {
+    if (dbState) {
+      setCurrentState(dbState.currentState);
+      setLastUpdated(dbState.lastUpdated);
+      setHistory(dbState.history || []);
+
+      const today = new Date().toDateString();
+      const lastDate = new Date(dbState.lastUpdated).toDateString();
+      setUpdateCount(today === lastDate ? dbState.updateCount : 0);
+    }
+  }, [dbState]);
 
   const states = [
     {
-      id: 'clear',
-      emoji: '🌤',
-      name: 'Clear / Focused',
+      id: "clear",
+      emoji: "🌤",
+      name: "Clear / Focused",
       icon: Sun,
-      color: 'bg-amber-50 border-amber-200',
-      textColor: 'text-amber-900',
-      accentColor: 'bg-amber-100',
+      color: "bg-amber-50 border-amber-200",
+      textColor: "text-amber-900",
+      accentColor: "bg-amber-100",
       tasks: [
-        'Deep thinking',
-        'Writing',
-        'Complex problem-solving',
-        'Planning'
-      ]
+        "Deep thinking",
+        "Writing",
+        "Complex problem-solving",
+        "Planning",
+      ],
     },
     {
-      id: 'noisy',
-      emoji: '🌊',
-      name: 'Noisy but Functional',
+      id: "noisy",
+      emoji: "🌊",
+      name: "Noisy but Functional",
       icon: Cloud,
-      color: 'bg-blue-50 border-blue-200',
-      textColor: 'text-blue-900',
-      accentColor: 'bg-blue-100',
+      color: "bg-blue-50 border-blue-200",
+      textColor: "text-blue-900",
+      accentColor: "bg-blue-100",
       tasks: [
-        'Mechanical tasks',
-        'Refactoring',
-        'Formatting',
-        'Reviewing',
-        'Cleaning up'
-      ]
+        "Mechanical tasks",
+        "Refactoring",
+        "Formatting",
+        "Reviewing",
+        "Cleaning up",
+      ],
     },
     {
-      id: 'overwhelmed',
-      emoji: '🌧',
-      name: 'Overwhelmed',
+      id: "overwhelmed",
+      emoji: "🌧",
+      name: "Overwhelmed",
       icon: CloudRain,
-      color: 'bg-slate-50 border-slate-300',
-      textColor: 'text-slate-900',
-      accentColor: 'bg-slate-200',
+      color: "bg-slate-50 border-slate-300",
+      textColor: "text-slate-900",
+      accentColor: "bg-slate-200",
       tasks: [
-        'Stop deep work',
-        'Do admin tasks',
-        'Move your body',
-        'Switch environment'
-      ]
+        "Stop deep work",
+        "Do admin tasks",
+        "Move your body",
+        "Switch environment",
+      ],
     },
     {
-      id: 'low',
-      emoji: '🌙',
-      name: 'Low Energy',
+      id: "low",
+      emoji: "🌙",
+      name: "Low Energy",
       icon: Moon,
-      color: 'bg-indigo-50 border-indigo-200',
-      textColor: 'text-indigo-900',
-      accentColor: 'bg-indigo-100',
+      color: "bg-indigo-50 border-indigo-200",
+      textColor: "text-indigo-900",
+      accentColor: "bg-indigo-100",
       tasks: [
-        'Light admin',
-        'Organizing files',
-        'Easy communication',
-        'Simple maintenance'
-      ]
-    }
+        "Light admin",
+        "Organizing files",
+        "Easy communication",
+        "Simple maintenance",
+      ],
+    },
   ];
 
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('mentalStateData');
-    if (stored) {
-      const data = JSON.parse(stored);
-      setCurrentState(data.currentState);
-      setLastUpdated(data.lastUpdated);
-      setHistory(data.history || []);
-      
-      const today = new Date().toDateString();
-      const lastDate = new Date(data.lastUpdated).toDateString();
-      setUpdateCount(today === lastDate ? data.updateCount : 0);
-    }
-  }, []);
-
-  // Save to localStorage whenever state changes
+  // Save to IndexedDB whenever state changes
   useEffect(() => {
     if (currentState || lastUpdated) {
-      localStorage.setItem('mentalStateData', JSON.stringify({
+      saveState({
         currentState,
         lastUpdated,
         updateCount,
-        history
-      }));
+        history,
+      });
     }
-  }, [currentState, lastUpdated, updateCount, history]);
+  }, [currentState, lastUpdated, updateCount, history, saveState]);
 
   const handleStateChange = (stateId) => {
     const now = new Date();
@@ -211,6 +212,11 @@ const MentalStateBoard = () => {
 
         {/* History */}
         {history.length > 0 && <CheckInHistory history={history} />}
+
+        {/* Data Backup */}
+        <div className="mt-8">
+          <DataBackup mentalStateData={dbState} tasksData={{}} />
+        </div>
       </div>
     </div>
   );
