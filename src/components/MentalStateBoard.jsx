@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Cloud, CloudRain, Moon, Sun } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import StateCard from './StateCard';
 import CheckInHistory from './CheckInHistory';
 import GuidanceBox from './GuidanceBox';
@@ -134,6 +135,17 @@ const MentalStateBoard = () => {
   return (
     <div className="min-h-screen p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
+        {/* Navigation */}
+        <div className="mb-8 flex items-center justify-between">
+          <div></div>
+          <Link 
+            to="/tasks" 
+            className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition text-sm font-medium"
+          >
+            📝 View Tasks
+          </Link>
+        </div>
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl md:text-5xl font-light text-slate-800 mb-2">
