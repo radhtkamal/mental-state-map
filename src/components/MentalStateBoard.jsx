@@ -149,9 +149,16 @@ const MentalStateBoard = () => {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-light text-slate-800 mb-2">
-            Mental State Weather Map
-          </h1>
+          <div className="flex items-center gap-4 mb-2">
+            <img 
+              src="/favicon-compact.svg" 
+              alt="Mental State Weather Map" 
+              className="w-12 h-12 md:w-16 md:h-16"
+            />
+            <h1 className="text-4xl md:text-5xl font-light text-slate-800">
+              Mental State Weather Map
+            </h1>
+          </div>
           <p className="text-slate-600 text-lg">
             This is state-awareness, not performance monitoring.
           </p>
